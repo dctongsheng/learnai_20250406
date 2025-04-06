@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-# load_dotenv("/Users/wenshuaibi/xm25/git25/learnai_20250406/.env")
+load_dotenv("/Users/wenshuaibi/xm25/envabout/.env")
 from typing import Annotated
 
 from typing_extensions import TypedDict
@@ -10,7 +10,7 @@ from langgraph.graph.message import add_messages
 from langchain_openai import ChatOpenAI
 openai_api_key = "sk-rEfv8vS2oJXBiw9YA855C11514De46D1Af2eAbE2509d7707"
 
-model = ChatOpenAI(model="deepseek-chat",api_key=openai_api_key,base_url="http://one.95271111.xyz/v1")
+model = ChatOpenAI(model="deepseek-chat")
 
 
 class State(TypedDict):

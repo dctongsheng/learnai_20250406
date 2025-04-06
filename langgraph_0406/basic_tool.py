@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-load_dotenv("../.env")
+load_dotenv("/Users/wenshuaibi/xm25/envabout/.env")
 from typing import Annotated
 
 from typing_extensions import TypedDict

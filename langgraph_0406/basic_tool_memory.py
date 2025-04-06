@@ -1,6 +1,6 @@
 from typing import Annotated
 from dotenv import load_dotenv
-load_dotenv("../.env")
+load_dotenv("/Users/wenshuaibi/xm25/envabout/.env")
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.messages import BaseMessage
 from typing_extensions import TypedDict
