@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科研助手路由系统</title>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .chat-container {
+            flex-grow: 1;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            max-height: 60vh;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background-color: #dcf8c6;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .assistant-message {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+        }
+        .input-container {
+            display: flex;
+            margin-top: 10px;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        #send-button {
+            padding: 12px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #send-button:hover {
+            background-color: #45a049;
+        }
+        .agent-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.3);
+            border-radius: 50%;
+            border-top-color: #4CAF50;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .agent-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 5px;
+            color: white;
+            background-color: #3498db;
+        }
+        .agents-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .agent-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            width: calc(33.33% - 10px);
+            background-color: #f9f9f9;
+        }
+        .agent-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .agent-card p {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>科研助手路由系统</h1>
+        
+        <div id="agents-list" class="agents-container">
+            <!-- 专业助手列表将在这里动态加载 -->
+            <div class="loading"></div>
+        </div>
+        
+        <div class="chat-container" id="chat-container">
+            <!-- 消息将在这里动态添加 -->
+            <div class="message assistant-message">
+                您好！我是科研助手路由系统。请输入您的问题，系统会自动将您的问题路由到最合适的专业助手。
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="请输入您的问题..." autofocus>
+            <button id="send-button">发送</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const agentsList = document.getElementById('agents-list');
+        
+        // 加载专业助手列表
+        async function loadAgents() {
+            try {
+                const response = await fetch(`${API_URL}/api/agents`);
+                if (!response.ok) {
+                    throw new Error('获取专业助手列表失败');
+                }
+                const agents = await response.json();
+                
+                // 清空加载动画
+                agentsList.innerHTML = '';
+                
+                // 添加专业助手卡片
+                agents.forEach(agent => {
+                    const agentCard = document.createElement('div');
+                    agentCard.className = 'agent-card';
+                    agentCard.innerHTML = `
+                        <h3>${agent.name}</h3>
+                        <p>${agent.description}</p>
+                    `;
+                    agentsList.appendChild(agentCard);
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                agentsList.innerHTML = '<p>加载专业助手列表失败，请刷新页面重试。</p>';
+            }
+        }
+        
+        // 发送消息
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+            
+            // 添加用户消息到聊天窗口
+            addMessage(message, 'user');
+            userInput.value = '';
+            
+            // 添加加载动画
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message assistant-message';
+            loadingDiv.innerHTML = '<div class="loading"></div> 正在思考...';
+            chatContainer.appendChild(loadingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            try {
+                const response = await fetch(`${API_URL}/api/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: message }),
+                });
+                
+                if (!response.ok) {
+                    throw new Error('请求失败');
+                }
+                
+                const data = await response.json();
+                
+                // 移除加载动画
+                chatContainer.removeChild(loadingDiv);
+                
+                // 添加助手回复
+                addMessage(data.response, 'assistant', data.agent_type);
+            } catch (error) {
+                console.error('Error:', error);
+                // 移除加载动画
+                chatContainer.removeChild(loadingDiv);
+                // 添加错误消息
+                addMessage('抱歉，处理您的请求时出现错误，请稍后重试。', 'assistant');
+            }
+        }
+        
+        // 添加消息到聊天窗口
+        function addMessage(text, sender, agentType = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+            
+            let messageContent = text;
+            
+            // 如果是助手消息且有agent类型，添加badge
+            if (sender === 'assistant' && agentType) {
+                const agentNames = {
+                    'chat': '简单聊天助手',
+                    'bioinformatics': '生信分析助手',
+                    'bioinfo_interpret': '生信解读助手',
+                    'literature': '文献辅助助手',
+                    'research_image': '科研图片助手',
+                    'deep_research': '深度科研助手'
+                };
+                
+                const agentName = agentNames[agentType] || agentType;
+                messageContent = `<div class="agent-badge">${agentName}</div><br>${text}`;
+            }
+            
+            messageDiv.innerHTML = messageContent;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // 事件监听器
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // 页面加载时获取专业助手列表
+        document.addEventListener('DOMContentLoaded', loadAgents);
+    </script>
+</body>
+</html>
