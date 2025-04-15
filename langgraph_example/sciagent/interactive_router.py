@@ -1,6 +1,3 @@
-from typing_extensions import TypedDict
-from langgraph.graph import StateGraph, START, END
-from IPython.display import Image, display
 from dotenv import load_dotenv
 load_dotenv("/Users/wenshuaibi/xm25/envabout/.env")
 
@@ -20,17 +17,17 @@ def main():
     print("系统会自动将您的问题路由到最合适的专业助手。")
     print("输入 'exit' 或 'quit' 退出程序。")
     print("=" * 50)
-    
+
     while True:
         user_input = input("\n请输入您的问题: ")
-        
+
         if user_input.lower() in ['exit', 'quit', '退出']:
             print("感谢使用，再见！")
             break
-            
+
         if not user_input.strip():
             continue
-            
+
         try:
             # 调用路由系统处理用户输入
             state = router_workflow.invoke({"input": user_input})

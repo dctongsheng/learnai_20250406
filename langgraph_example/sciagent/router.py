@@ -1,14 +1,26 @@
 from typing_extensions import Literal
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
-from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
-from IPython.display import Image, display
 from dotenv import load_dotenv
 load_dotenv("/Users/wenshuaibi/xm25/envabout/.env")
 
-from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_openai import ChatOpenAI
+
+# 导入所有专业agent
+from agents import (
+    chat_agent,
+    bioinformatics_agent,
+    bioinfo_interpret_agent,
+    literature_agent,
+    research_image_agent,
+    deep_research_agent
+)
+
+# 导入State类型
+from agents.base_agent import State
+
+# 创建LLM实例
 llm = ChatOpenAI(model="gpt-4o")
 
 # Schema for structured output to use as routing logic
@@ -29,72 +41,7 @@ class Route(BaseModel):
 router = llm.with_structured_output(Route)
 
 
-# State
-class State(TypedDict):
-    input: str
-    decision: str
-    output: str
-
-
-# Nodes
-def chat_agent(state: State):
-    """简单聊天agent - 处理一般对话请求"""
-
-    result = llm.invoke([
-        SystemMessage(content="你是一个友好的聊天助手，可以回答用户的一般性问题。"),
-        HumanMessage(content=state["input"])
-    ])
-    return {"output": result.content}
-
-
-def bioinformatics_agent(state: State):
-    """生信分析agent - 处理生物信息学分析请求"""
-
-    result = llm.invoke([
-        SystemMessage(content="你是一个专业的生物信息学分析助手，擅长基因组学、转录组学、蛋白质组学等分析方法。"),
-        HumanMessage(content=state["input"])
-    ])
-    return {"output": result.content}
-
-
-def bioinfo_interpret_agent(state: State):
-    """生信解读agent - 解释生物信息学分析结果"""
-
-    result = llm.invoke([
-        SystemMessage(content="你是一个专业的生物信息学解读助手，擅长解释各种生物信息学分析结果，包括差异表达分析、富集分析、网络分析等。"),
-        HumanMessage(content=state["input"])
-    ])
-    return {"output": result.content}
-
-
-def literature_agent(state: State):
-    """文献辅助agent - 帮助用户理解和分析科学文献"""
-
-    result = llm.invoke([
-        SystemMessage(content="你是一个专业的文献辅助助手，擅长帮助用户理解、总结和分析科学文献，特别是生物医学领域的文献。"),
-        HumanMessage(content=state["input"])
-    ])
-    return {"output": result.content}
-
-
-def research_image_agent(state: State):
-    """科研图片助手agent - 帮助用户理解和创建科研图片"""
-
-    result = llm.invoke([
-        SystemMessage(content="你是一个专业的科研图片助手，擅长解释科研图片、提供图片创建建议，以及帮助用户理解各种科学可视化。"),
-        HumanMessage(content=state["input"])
-    ])
-    return {"output": result.content}
-
-
-def deep_research_agent(state: State):
-    """DeepResearchAgent - 深度科研助手"""
-
-    result = llm.invoke([
-        SystemMessage(content="你是一个高级科研助手，能够帮助研究人员进行深度的科学研究，包括实验设计、数据分析、结果解释和论文写作等方面。"),
-        HumanMessage(content=state["input"])
-    ])
-    return {"output": result.content}
+# 路由器节点
 
 
 def llm_call_router(state: State):
@@ -179,17 +126,19 @@ router_builder.add_edge("deep_research_agent", END)
 # Compile workflow
 router_workflow = router_builder.compile()
 
-# Show the workflow
+# 如果需要可视化工作流，取消下面的注释
+# from IPython.display import Image
 # display(Image(router_workflow.get_graph().draw_mermaid_png()))
 
-# Example invocations for testing
-# 简单聊天
-state = router_workflow.invoke({"input": "你好，今天天气怎么样？"})
-print("简单聊天示例输出:")
-print(state["output"])
-print("\n")
+# 仅在直接运行此文件时执行测试
+if __name__ == "__main__":
+    # 简单聊天测试
+    state = router_workflow.invoke({"input": "你好，今天天气怎么样？"})
+    print("简单聊天示例输出:")
+    print(state["output"])
+    print("\n")
 
-# 生信分析
-state = router_workflow.invoke({"input": "我需要对RNA-seq数据进行差异表达分析，请给我一些建议。"})
-print("生信分析示例输出:")
-print(state["output"])
+    # 生信分析测试
+    state = router_workflow.invoke({"input": "我需要对RNA-seq数据进行差异表达分析，请给我一些建议。"})
+    print("生信分析示例输出:")
+    print(state["output"])
