@@ -3,7 +3,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END
 from dotenv import load_dotenv
-load_dotenv("/Users/wenshuaibi/xm25/envabout/.env")
+load_dotenv("/mnt/shared_disk/.env")
 
 from langchain_openai import ChatOpenAI
 

@@ -29,7 +29,7 @@ def main():
     
     # 启动API服务器
     api_process = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "api:app", "--reload", "--port", "8000"],
+        [sys.executable, "-m", "uvicorn", "api:app", "--reload", "--port", "8000","--host","0.0.0.0"],
         cwd=Path(__file__).parent
     )
     

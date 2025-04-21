@@ -8,15 +8,20 @@
 
 API提供以下功能:
 - POST /api/query: 发送查询并获取回答
+- POST /api/query/stream: 发送查询并以流式方式获取回答
 - GET /api/agents: 获取所有可用的专业助手列表
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from sse_starlette.sse import EventSourceResponse
 from pydantic import BaseModel
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, AsyncGenerator, Any
 import time
 import asyncio
+import json
+import logging
 from contextlib import asynccontextmanager
 
 # 导入路由系统
@@ -110,25 +115,25 @@ async def get_agents():
 async def process_query(request: QueryRequest):
     """
     处理用户查询并返回回答
-    
+
     - **query**: 用户的查询文本
     - **user_id**: 可选的用户ID，用于未来的历史记录功能
     """
     try:
         # 记录开始时间
         start_time = time.time()
-        
+
         # 使用异步方式调用路由系统
         # 由于LangGraph不是原生异步的，我们使用run_in_executor来避免阻塞
         def run_workflow():
             return router_workflow.invoke({"input": request.query})
-        
+
         # 在线程池中运行同步代码
         state = await asyncio.get_event_loop().run_in_executor(None, run_workflow)
-        
+
         # 计算处理时间
         processing_time = time.time() - start_time
-        
+
         # 构建响应
         return QueryResponse(
             response=state["output"],
@@ -140,6 +145,87 @@ async def process_query(request: QueryRequest):
         error_msg = f"处理查询时出错: {str(e)}"
         print(error_msg)
         raise HTTPException(status_code=500, detail=error_msg)
+
+# 设置日志记录器
+logger = logging.getLogger("api")
+
+# 处理流式查询请求
+@app.post("/api/query/stream", tags=["query"])
+async def process_query_stream(request: QueryRequest, req: Request):
+    """
+    处理用户查询并以流式方式返回回答
+
+    - **query**: 用户的查询文本
+    - **user_id**: 可选的用户ID，用于未来的历史记录功能
+    """
+
+    async def event_generator():
+        try:
+            # 记录开始时间
+            start_time = time.time()
+
+            # 使用完整的工作流处理请求
+            def run_workflow():
+                return router_workflow.invoke({"input": request.query})
+
+            # 检查客户端是否已断开连接
+            if await req.is_disconnected():
+                logger.info("客户端已断开连接，停止工作流")
+                return
+
+            # 在线程池中运行同步代码
+            state = await asyncio.get_event_loop().run_in_executor(None, run_workflow)
+
+            # 获取决策和输出
+            agent_type = state["decision"]
+            response = state["output"]
+
+            # 发送决策信息
+            decision_data = {
+                "agent_type": agent_type
+            }
+            yield {
+                "event": "decision",
+                "data": json.dumps(decision_data, ensure_ascii=False)
+            }
+
+            # 检查客户端是否已断开连接
+            if await req.is_disconnected():
+                logger.info("客户端已断开连接，停止工作流")
+                return
+
+            # 计算处理时间
+            processing_time = time.time() - start_time
+
+            # 发送完整响应
+            response_data = {
+                "response": response,
+                "agent_type": agent_type,
+                "processing_time": processing_time
+            }
+            yield {
+                "event": "response",
+                "data": json.dumps(response_data, ensure_ascii=False)
+            }
+
+        except asyncio.CancelledError:
+            logger.info("流处理已取消")
+            raise
+        except Exception as e:
+            # 发送错误信息
+            error_data = {
+                "error": str(e)
+            }
+            yield {
+                "event": "error",
+                "data": json.dumps(error_data, ensure_ascii=False)
+            }
+
+    return EventSourceResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        sep="\n"
+    )
 
 # 健康检查端点
 @app.get("/health", tags=["system"])

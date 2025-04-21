@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>科研助手路由系统</title>
+    <title>SciAgent</title>
     <style>
         body {
             font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
@@ -125,7 +125,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>科研助手路由系统</h1>
+        <h1>SciAgent</h1>
         
         <div id="agents-list" class="agents-container">
             <!-- 专业助手列表将在这里动态加载 -->
@@ -135,7 +135,7 @@
         <div class="chat-container" id="chat-container">
             <!-- 消息将在这里动态添加 -->
             <div class="message assistant-message">
-                您好！我是科研助手路由系统。请输入您的问题，系统会自动将您的问题路由到最合适的专业助手。
+                您好！我是SciAgent。请输入您的问题，系统会自动将您的问题路由到最合适的专业助手。
             </div>
         </div>
         
@@ -146,7 +146,7 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8000';
+        const API_URL = 'http://172.28.140.214:8000';
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
@@ -261,7 +261,7 @@
         });
         
         // 页面加载时获取专业助手列表
-        document.addEventListener('DOMContentLoaded', loadAgents);
+        // document.addEventListener('DOMContentLoaded', loadAgents);
     </script>
 </body>
 </html>
